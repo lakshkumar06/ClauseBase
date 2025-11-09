@@ -5,7 +5,7 @@ import { ensureReputationExists } from "./reputation";
 import idl from "../../../agreed_contracts/target/idl/agreed_contracts.json";
 import axios from "axios";
 
-const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb");
+const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb");
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -98,24 +98,24 @@ export async function initializeContractOnChain(
     const program = new Program(idl as anchor.Idl, provider);
 
     console.log("Deriving contract PDA...");
-    console.log("- Program ID:", PROGRAM_ID.toString());
+    console.log("- Program ID:", program.programId.toString());
     
-    // Derive contract PDA
+    // Derive contract PDA using program.programId to ensure it matches
     const [contractPDA] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("contract"),
         numericIdBN.toArrayLike(Buffer, "le", 8),
         wallet.publicKey.toBuffer(),
       ],
-      PROGRAM_ID
+      program.programId
     );
     
     console.log("Contract PDA derived:", contractPDA.toString());
 
-    // Derive reputation PDA
+    // Derive reputation PDA using program.programId
     const [creatorReputationPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
-      PROGRAM_ID
+      program.programId
     );
 
     // Initialize contract on-chain

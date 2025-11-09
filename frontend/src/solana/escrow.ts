@@ -3,7 +3,12 @@ import { Program } from "@coral-xyz/anchor";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import idl from "../../../agreed_contracts/target/idl/agreed_contracts.json";
 
-const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb");
+const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb");
+
+// Helper to create Program - uses IDL's address
+function createProgram(provider: any) {
+  return new Program(idl as anchor.Idl, provider);
+}
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 
 export interface EscrowMilestoneData {
@@ -68,6 +73,7 @@ export function getContractPDA(contractId: string | number, creator: PublicKey):
 
 // Derive reputation PDA
 export function getReputationPDA(wallet: PublicKey): [PublicKey, number] {
+  // Utility function - uses PROGRAM_ID which should match IDL's address
   const [pda, bump] = PublicKey.findProgramAddressSync(
     [Buffer.from("reputation"), wallet.toBuffer()],
     PROGRAM_ID
@@ -90,7 +96,7 @@ export async function initializeEscrowMilestone(
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
   const contractPDA = contractPDAOverride
@@ -151,7 +157,7 @@ export async function markMilestoneComplete(
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
   const contractPDA = contractPDAOverride
@@ -187,7 +193,7 @@ export async function approveMilestoneRelease(
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
   const contractPDA = contractPDAOverride
@@ -224,7 +230,7 @@ export async function releaseEscrowFunds(
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
   const recipient = new PublicKey(recipientAddress);
@@ -255,7 +261,7 @@ export async function cancelEscrowMilestone(
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
   });
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
 
@@ -286,7 +292,7 @@ export async function fetchEscrowMilestone(
     {} as anchor.Wallet,
     { commitment: "confirmed" }
   );
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   const [escrowPDA] = getEscrowMilestonePDA(contractId, milestoneId);
 
@@ -308,7 +314,7 @@ export async function fetchContractEscrowMilestones(
     {} as anchor.Wallet,
     { commitment: "confirmed" }
   );
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   try {
     // Convert contractId string to BN properly

@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-agreed_contracts = "2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb"
+agreed_contracts = "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb"
 
 [registry]
 url = "https://api.apr.dev"

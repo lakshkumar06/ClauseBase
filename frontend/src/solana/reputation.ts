@@ -3,13 +3,14 @@ import { Program } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import idl from "../../../agreed_contracts/target/idl/agreed_contracts.json";
 
-const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb");
+const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb");
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 
 export async function initializeReputation(wallet: any) {
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   const program = new Program(idl as anchor.Idl, provider);
 
+  // Use program.programId to ensure PDA matches what program expects
   const [reputationPDA] = PublicKey.findProgramAddressSync(
     [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
     program.programId
@@ -99,13 +100,14 @@ export async function markContractComplete(
 }
 
 export async function ensureReputationExists(wallet: any) {
-  const [reputationPDA] = PublicKey.findProgramAddressSync(
-    [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
-    PROGRAM_ID
-  );
-
   const provider = new anchor.AnchorProvider(connection, wallet, {});
   const program = new Program(idl as anchor.Idl, provider);
+  
+  // Use program.programId to ensure PDA matches what program expects
+  const [reputationPDA] = PublicKey.findProgramAddressSync(
+    [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
+    program.programId
+  );
 
   try {
     await program.account.userReputation.fetch(reputationPDA);

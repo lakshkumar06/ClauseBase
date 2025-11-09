@@ -12,7 +12,7 @@ const idl = JSON.parse(readFileSync(join(__dirname, '../../agreed_contracts/targ
 
 const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 const MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgd6ofga5DgLRkJrFb';
-const PROGRAM_ID = new PublicKey(process.env.SOLANA_PROGRAM_ID || '2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb');
+const PROGRAM_ID = new PublicKey(process.env.SOLANA_PROGRAM_ID || '8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb');
 
 // Generate SHA256 hash of contract content
 export function generateContractHash(contractText) {

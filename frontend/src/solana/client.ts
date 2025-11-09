@@ -4,7 +4,12 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { ensureReputationExists } from "./reputation";
 import idl from "../../../agreed_contracts/target/idl/agreed_contracts.json";
 
-const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "2Ye3UPoTi9t7j1vHq6VsqivGxQWgd6ofga5DgLRkJrFb");
+const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb");
+
+// Helper to create Program - uses IDL's address
+function createProgram(provider: any) {
+  return new Program(idl as anchor.Idl, provider);
+}
 const connection = new Connection("https://api.devnet.solana.com", "confirmed");
 
 export interface ContractData {
@@ -30,12 +35,12 @@ export async function initializeContract(
     commitment: "confirmed",
   });
   
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
   
   // Ensure creator has reputation account
   const [creatorRepPDA] = PublicKey.findProgramAddressSync(
     [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
-    PROGRAM_ID
+    program.programId
   );
 
   try {
@@ -51,7 +56,7 @@ export async function initializeContract(
       new anchor.BN(contractId).toArrayLike(Buffer, "le", 8),
       wallet.publicKey.toBuffer(),
     ],
-    PROGRAM_ID
+    program.programId
   );
 
   const tx = await program.methods
@@ -79,7 +84,7 @@ export async function approveContract(
     commitment: "confirmed",
   });
   
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
   
   // Convert PDA string to PublicKey if needed
   const contractPDAKey = typeof contractPDA === 'string' 
@@ -103,7 +108,7 @@ export async function approveContract(
   // Ensure approver has reputation account
   const [approverRepPDA] = PublicKey.findProgramAddressSync(
     [Buffer.from("reputation"), wallet.publicKey.toBuffer()],
-    PROGRAM_ID
+    program.programId
   );
 
   try {
@@ -133,7 +138,7 @@ export async function cancelContract(
     commitment: "confirmed",
   });
   
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
   
   const [contractPDA] = PublicKey.findProgramAddressSync(
     [
@@ -141,7 +146,7 @@ export async function cancelContract(
       new anchor.BN(contractId).toArrayLike(Buffer, "le", 8),
       wallet.publicKey.toBuffer(),
     ],
-    PROGRAM_ID
+    program.programId
   );
 
   const tx = await program.methods
@@ -160,7 +165,7 @@ export async function fetchContract(
 ): Promise<ContractData | null> {
   const provider = new anchor.AnchorProvider(connection, {} as any, {});
   
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
   
   const contract = await program.account.contract.fetch(contractPDA);
   return contract as ContractData;
@@ -176,7 +181,7 @@ export async function fetchContractByPDA(
       {} as any,
       { commitment: "finalized" }
     );
-    const program = new Program(idl as anchor.Idl, provider);
+    const program = createProgram(provider);
     const data = await program.account.contract.fetch(new PublicKey(contractPDA));
     return data as ContractData;
   } catch (e) {
@@ -223,7 +228,7 @@ export async function fetchContractData(
     {} as anchor.Wallet,
     { commitment: "confirmed" }
   );
-  const program = new Program(idl as anchor.Idl, provider);
+  const program = createProgram(provider);
 
   try {
     // Convert contractId string to BN properly
