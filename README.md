@@ -1,68 +1,118 @@
-![Pact. Logo](images/Logo.png)
+# Pact
 
-# Pact. - Git for Legal Agreements
+Complete vendor lifecycle management. Track reputation, negotiate contracts with version control, and automate milestone-based payments.
 
-Pact. is a collaborative contract management platform that brings version control to legal agreements, powered by Solana blockchain for trustless coordination and cryptographic proof.
+## Overview
 
-## The Problem
+Enterprises lose 9% of annual revenue to contract mismanagement. Vendor fraud costs millions per incident. Payment delays lock up $400B globally. These problems exist because discovery, negotiation, and execution are fragmented across email, legal systems, and manual payment processing.
 
-Contract collaboration is broken in most organizations:
-- Edits scattered across email threads, Slack, and Google Docs
-- No single source of truth for "who approved what and when"
-- Legal and ops teams waste hours reconciling version mismatches
-- Payments delayed for months due to approval ambiguity
-- Companies lose ~9% of annual revenue to contract mismanagement
+Pact unifies the entire vendor relationship into one platform. Reputation scores follow wallets across organizations. Contract changes are tracked like Git commits. Payments release automatically when milestones complete. Everything is verifiable on-chain.
 
-## The Solution
+## Core Features
 
-Pact. combines Git-style version control with blockchain verification:
+### Dual Reputation System
 
-1. **Create** - All stakeholders see the same contract version
-2. **Propose** - Changes tracked with full diff history and commits
-3. **Approve** - GitHub-style review flow with threaded comments
-4. **Finalize** - Immutable hash stored on Solana, content on IPFS
+Every user has two scores: performance as a vendor and reliability as a client. Scores are computed from completed deals, payment speed, delivery time, and dispute history. Portable across all platform users.
 
-### Key Features
+**Vendor Reputation** tracks:
+- Delivery timeliness (average time from milestone creation to completion)
+- Quality ratings (1-5 scale from clients)
+- Completion rate (deals completed vs. cancelled)
+- Dispute count
 
-- **Version Control**: Complete commit history, diff tracking, no more "final_v2_ACTUAL_final.pdf"
-- **AI Assistant**: Extracts deadlines, flags risks, answers contract questions via RAG
-- **Trustless Escrow**: Lock funds on contract creation, auto-release on approval threshold
-- **On-Chain Reputation**: Portable contract history that follows your wallet
-- **Cryptographic Proof**: Unforgeable timestamps and verification via Solana Explorer
+**Client Reputation** tracks:
+- Payment timeliness (how quickly milestones are approved after completion)
+- Responsiveness ratings (1-5 scale from vendors)
+- Completion rate
+- Dispute count
+
+Reputation scores are stored on-chain and follow wallet addresses, making them portable across organizations and platforms.
+
+### Version-Controlled Contracts
+
+Propose changes, review diffs, approve with multi-sig. Full commit history shows who changed what and when. Final contract hash stored on-chain as immutable proof.
+
+**How it works:**
+1. Any contract member can propose changes by editing the contract
+2. Changes are tracked as new versions with automatic diff computation
+3. Other members review and approve/reject changes
+4. When all members approve, the version auto-merges
+5. Merged versions are stored on IPFS with the hash recorded on-chain
+
+This eliminates the "final_v2_ACTUAL_final.pdf" problem and provides a complete audit trail of all contract modifications.
+
+### Milestone-Based Escrow
+
+Client deposits payment upfront into program-controlled vaults. Vendor marks milestones complete. Client approves. Smart contract releases payment instantly. No intermediary, no 60-day wait.
+
+**Workflow:**
+1. Client creates a milestone with description, amount, recipient, and deadline
+2. Funds are locked in an escrow account on-chain
+3. Vendor marks the milestone as complete when work is done
+4. Client (and other participants) approve the completion
+5. Once approval threshold is met, funds automatically release to vendor
+6. Reputation scores update based on delivery time and payment speed
+
+This ensures vendors get paid promptly for completed work while protecting clients from incomplete deliverables.
+
+### AI-Powered Contract Analysis
+
+Automatically extracts clauses, deadlines, and payment milestones from contract text using Google Gemini. Provides a RAG-based chatbot for contract Q&A.
+
+**Capabilities:**
+- Clause extraction with categorization (Payment, Termination, Confidentiality, etc.)
+- Deadline identification with date parsing
+- Payment milestone detection with amount and recipient extraction
+- Natural language Q&A about contract terms
+
+### Fraud Detection
+
+Algorithm analyzes wallet age, transaction history, account activity, and cross-platform reputation. High-risk accounts flagged before deals begin.
+
+## How It Works
+
+### 1. Discovery
+
+Client invites vendor to deal. Both see each other's verified reputation scores. Scores are computed from on-chain activity and are portable across the platform.
+
+### 2. Negotiation
+
+Parties collaborate on contract terms with full version control. Each change creates a new version with diff tracking. Members approve or reject changes. When all members approve, the version merges automatically. Multi-sig approval finalizes agreement.
+
+### 3. Execution
+
+Client locks payment in escrow for each milestone. Vendor completes work and marks milestone complete. Client approves. Smart contract releases payment automatically when approval threshold is met. No manual payment processing required.
+
+### 4. Reputation Update
+
+Deal completion updates both parties' on-chain scores visible to future counterparties. Vendor scores reflect delivery timeliness and quality. Client scores reflect payment speed and responsiveness.
+
+## Screenshots
+
+(images/1.png)
+
+(images/2.png)
+
+(images/3.png)
 
 ## Technical Architecture
 
-### Solana Integration
+### Blockchain Integration
 
-I'm taking full advantage of Solana's capabilities:
-
-**Program Accounts & PDAs**
-- Each contract is a Solana account with deterministic addressing
-- Stores contract metadata, participants, approval status, IPFS hash
-- Source of truth lives on-chain, eliminating centralized database dependencies
-
-**IPFS Storage**
-- Full contract content stored on IPFS for decentralized access
-- Only cryptographic hash stored on-chain (keeps sensitive data off public ledger)
-- Verifiable document integrity without exposing details
-
-**Escrow System**
-- PDA-based vault accounts lock SOL/USDC on contract creation
-- Automatic release when approval threshold met
-- Trustless settlement - code enforces payment, not intermediaries
-
-**Reputation System**
-- Per-wallet PDA tracking contracts created, completed, approved
-- Portable on-chain credibility that transfers across platforms
-- Builds verifiable business history
-
-**Why Solana?**
-- Sub-second finality for instant approval confirmations
-- Fraction-of-a-cent transactions enable multiple on-chain operations
-- Account model allows efficient structured state storage
-- Feels like a normal app, not a "blockchain app"
+Pact uses Solana for on-chain state management. Contract metadata, approval status, and IPFS hashes are stored in Program Derived Accounts (PDAs) for deterministic addressing. Escrow funds are held in PDA-controlled vaults that automatically release when approval conditions are met. Reputation scores are stored on-chain and follow wallet addresses, making them portable across platforms. Contract content is stored on IPFS to keep sensitive data off the public ledger while maintaining verifiable integrity through on-chain hashes.
 
 ### Tech Stack
+
+**Frontend:**
+- React + Vite
+- Tailwind CSS
+- Solana Wallet Adapter (Phantom, Solflare support)
+
+**Backend:**
+- Node.js + Express
+- SQLite for relational data (contracts, versions, approvals)
+- IPFS (Pinata/Web3.Storage) for document storage
+- Google Gemini for AI contract analysis
 
 **On-Chain:**
 - Solana Programs (Rust + Anchor Framework)
@@ -70,109 +120,22 @@ I'm taking full advantage of Solana's capabilities:
 - PDAs for deterministic account addressing
 - Multi-signature approval logic at program level
 
-**Off-Chain:**
-- IPFS (Pinata/Web3.Storage) for document storage
-- AI: Google Gemini for contract analysis
-- RAG-based chatbot for contract Q&A
-- Frontend: [Your framework - React/Next.js?]
+### Key Design Decisions
 
-**Integrations:**
-- Solana Wallet Adapter (Phantom, Solflare support)
-- @solana/web3.js + @coral-xyz/anchor for TypeScript client
+**Hybrid Storage Model:** Contract content stored on IPFS, metadata on Solana. This balances cost (IPFS is cheaper for large documents) with verifiability (on-chain hashes prove integrity).
 
-## Architecture Diagram
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend                              │
-│  (Version Control UI + AI Chat + Wallet Connection)         │
-└───────────────────┬─────────────────────────────────────────┘
-                    │
-        ┌───────────┴───────────┐
-        │                       │
-        ▼                       ▼
-┌───────────────┐       ┌──────────────────┐
-│  IPFS Storage │       │  Solana Program  │
-│               │       │                  │
-│ • Documents   │       │ • Contract PDA   │
-│ • Full Text   │       │ • Escrow Vault   │
-│ • Encrypted   │       │ • Reputation PDA │
-└───────────────┘       │ • Multi-sig      │
-                        └──────────────────┘
-```
+**Dual Reputation System:** Separate scores for vendor and client roles recognize that the same person may act as both. This provides more accurate reputation signals.
 
-## Screenshots
+**Auto-merge on 100% Approval:** When all contract members approve a version, it automatically merges. This reduces friction while maintaining consensus.
 
-> Note: Paths assume this README is at the repo root and images are in `images/`.
+**Milestone-Based Payments:** Breaking payments into milestones reduces risk for both parties. Vendors get paid incrementally, clients only pay for completed work.
 
-![Home](images/1.png)
-
-![Create](images/2.png)
-
-![Approve](images/3.png)
-
-![Version History](images/4.png)
-
-## Program Instructions
-
-### Core Instructions
-
-1. **initialize_contract**
-   - Creates contract account PDA
-   - Sets participants and approval threshold
-   - Increments creator's reputation
-
-2. **approve_contract**
-   - Records approval from participant
-   - Increments approval count
-   - Changes status to Completed when threshold reached
-   - Updates approver's reputation
-
-3. **initialize_reputation**
-   - Creates per-wallet reputation PDA
-   - Tracks contracts_created, contracts_completed, contracts_approved
-
-4. **mark_contract_complete**
-   - Updates participant reputation after contract completion
-   - Called for each participant post-approval
-
-### Account Structures
-
-**Contract Account**
-```rust
-pub struct Contract {
-    pub contract_id: u64,
-    pub creator: Pubkey,
-    pub participants: Vec<Pubkey>,
-    pub escrow_amount: u64,
-    pub escrow_vault: Pubkey,
-    pub status: ContractStatus, // Active | Completed | Cancelled
-    pub ipfs_hash: String,
-    pub required_approvals: u8,
-    pub current_approvals: u8,
-    pub approvers: Vec<Pubkey>,
-    pub created_at: i64,
-    pub completed_at: Option<i64>,
-    pub bump: u8,
-}
-```
-
-**UserReputation Account**
-```rust
-pub struct UserReputation {
-    pub wallet: Pubkey,
-    pub contracts_created: u32,
-    pub contracts_completed: u32,
-    pub contracts_approved: u32,
-    pub total_value_escrowed: u64,
-    pub first_activity: i64,
-    pub last_activity: i64,
-    pub bump: u8,
-}
-```
+**On-Chain Reputation:** Storing reputation on-chain makes it portable and verifiable. Users can build reputation across multiple organizations and platforms.
 
 ## Getting Started
 
 ### Prerequisites
+
 ```bash
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -187,13 +150,14 @@ avm use latest
 ```
 
 ### Build & Deploy
+
 ```bash
 # Clone repo
 git clone [your-repo-url]
-cd Pact.
+cd ClauseBase
 
 # Build Solana program
-cd programs/agreed-contracts
+cd agreed_contracts
 anchor build
 
 # Deploy to devnet
@@ -204,57 +168,37 @@ anchor test
 ```
 
 ### Environment Setup
+
 ```bash
-# Set Solana to devnet
-solana config set --url devnet
+# Backend
+cd backend
+npm install
+cp .env.example .env  # Configure SOLANA_PROGRAM_ID, GEMINI_API_KEY, etc.
+npm start
 
-# Create wallet (if needed)
-solana-keygen new
-
-# Airdrop SOL for testing
-solana airdrop 2
+# Frontend
+cd frontend
+npm install
+npm run dev
 ```
 
-## Usage Example
-```typescript
-import { initializeContract, approveContract, fetchContract } from './solana/client';
-import { initializeReputation, fetchReputation } from './solana/reputation';
+## Built For
 
-// Ensure user has reputation account
-await initializeReputation(wallet);
+**Track 1**: Secure & Intelligent Onboarding Hub
 
-// Create contract
-const { signature, contractPDA } = await initializeContract(
-  wallet,
-  contractId,
-  [participant1, participant2, participant3],
-  2 // require 2 approvals
-);
+- Automated workflow engine via multi-sig approvals
+- Fraud detection and risk scoring
+- Audit dashboard for deal monitoring
 
-// Approve contract
-await approveContract(wallet, contractId, creatorPubkey);
+**Track 2**: Best Use of Solana
 
-// Fetch contract state
-const contract = await fetchContract(contractPDA);
-console.log(`Status: ${contract.status}`);
-console.log(`Approvals: ${contract.currentApprovals}/${contract.requiredApprovals}`);
-
-// Fetch reputation
-const rep = await fetchReputation(wallet.publicKey);
-console.log(`Contracts Created: ${rep.contractsCreated}`);
-```
-
-
+- Portable cross-organization reputation
+- Trustless escrow without intermediaries
+- Cryptographic proof of agreements
+- Real-time settlement at near-zero cost
 
 ## Why This Matters
 
-Every contract is a promise. Right now, promises live in email threads, lawyers' desks, and people's memory. Pact. puts them in version-controlled, cryptographically-verified, immutable shared truth.
+Every contract is a promise. Right now, promises live in email threads, lawyers' desks, and people's memory. Pact puts them in version-controlled, cryptographically-verified, immutable shared truth.
 
 This isn't about replacing lawyers. It's about giving everyone the tools lawyers wish they had.
-
-
-
-
-**Built for the Solana Cypherpunk Hackathon 2025**
-
-*Making contracts truly smart.*
