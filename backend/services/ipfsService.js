@@ -1,46 +1,54 @@
-import crypto from 'crypto';
+// Use Web3.Storage for IPFS uploads
+// Set WEB3_STORAGE_TOKEN in environment variables
+const WEB3_STORAGE_TOKEN = process.env.WEB3_STORAGE_TOKEN;
 
-// For demo purposes, we'll use a simulated IPFS hash
-// In production, connect to an actual IPFS node or use a service like Pinata/Web3.Storage
-const USE_MOCK_IPFS = true;
+let web3StorageClient = null;
 
-let ipfsClient = null;
-
-// Initialize IPFS client (if using real IPFS)
-async function initIPFSClient() {
-  if (!USE_MOCK_IPFS && !ipfsClient) {
+// Initialize Web3.Storage client
+async function initWeb3Storage() {
+  if (!web3StorageClient) {
+    if (!WEB3_STORAGE_TOKEN) {
+      throw new Error('WEB3_STORAGE_TOKEN environment variable is required for IPFS uploads');
+    }
     try {
-      // Dynamically import only when needed
-      const { create } = await import('kubo-rpc-client');
-      ipfsClient = create({ url: process.env.IPFS_API_URL || 'http://127.0.0.1:5001' });
-      console.log('IPFS client initialized');
+      const { Web3Storage } = await import('web3.storage');
+      web3StorageClient = new Web3Storage({ token: WEB3_STORAGE_TOKEN });
+      console.log('✅ Web3.Storage client initialized');
     } catch (error) {
-      console.warn('IPFS client not available, falling back to mock mode');
+      console.error('Failed to initialize Web3.Storage:', error.message);
+      throw new Error(`Failed to initialize IPFS client: ${error.message}`);
     }
   }
+  return web3StorageClient;
 }
 
 /**
- * Upload contract content to IPFS
+ * Upload contract content to IPFS using Web3.Storage
  * @param {string} content - The contract content to upload
  * @returns {Promise<string>} - The IPFS hash (CID)
  */
 export async function uploadToIPFS(content) {
-  if (USE_MOCK_IPFS || !ipfsClient) {
-    // Generate a deterministic mock hash for demo purposes
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-    return `Qm${hash.substring(0, 44)}`; // Mock IPFS CIDv0 format
-  }
-
-  // Initialize IPFS client if needed
-  await initIPFSClient();
-
+  const client = await initWeb3Storage();
+  
   try {
-    const { cid } = await ipfsClient.add(content);
-    return cid.toString();
+    console.log('📤 Uploading content to IPFS...');
+    const { File } = await import('web3.storage');
+    const file = new File([Buffer.from(content, 'utf8')], 'contract.txt', {
+      type: 'text/plain',
+    });
+    
+    const cid = await client.put([file], {
+      name: `contract-${Date.now()}`,
+      wrapWithDirectory: false,
+    });
+    
+    console.log(`✅ Content uploaded to IPFS! CID: ${cid}`);
+    console.log(`   🔗 View at: https://${cid}.ipfs.w3s.link/`);
+    console.log(`   📋 IPFS Gateway: https://ipfs.io/ipfs/${cid}`);
+    return cid;
   } catch (error) {
-    console.error('Error uploading to IPFS:', error);
-    throw new Error('Failed to upload content to IPFS');
+    console.error('❌ Error uploading to IPFS:', error.message);
+    throw new Error(`Failed to upload content to IPFS: ${error.message}`);
   }
 }
 
@@ -50,45 +58,55 @@ export async function uploadToIPFS(content) {
  * @returns {Promise<string>} - The content
  */
 export async function retrieveFromIPFS(ipfsHash) {
-  if (USE_MOCK_IPFS || !ipfsClient) {
-    // In mock mode, we can't actually retrieve
-    throw new Error('Mock IPFS mode - content must be stored in database');
-  }
-
-  // Initialize IPFS client if needed
-  await initIPFSClient();
-
+  const client = await initWeb3Storage();
+  
   try {
-    const chunks = [];
-    for await (const chunk of ipfsClient.cat(ipfsHash)) {
-      chunks.push(chunk);
+    console.log(`📥 Retrieving content from IPFS: ${ipfsHash}`);
+    const res = await client.get(ipfsHash);
+    if (!res) {
+      throw new Error('Content not found on IPFS');
     }
-    return Buffer.concat(chunks).toString('utf8');
+    
+    const files = await res.files();
+    if (files.length === 0) {
+      throw new Error('No files found in IPFS CID');
+    }
+    
+    const file = files[0];
+    const content = await file.text();
+    console.log(`✅ Retrieved content from IPFS: ${ipfsHash}`);
+    return content;
   } catch (error) {
     console.error('Error retrieving from IPFS:', error);
-    throw new Error('Failed to retrieve content from IPFS');
+    throw new Error(`Failed to retrieve content from IPFS: ${error.message}`);
   }
 }
 
 /**
  * Pin content to IPFS to ensure it persists
+ * Note: Web3.Storage automatically pins content when uploaded
  * @param {string} ipfsHash - The IPFS hash (CID) to pin
  * @returns {Promise<void>}
  */
 export async function pinToIPFS(ipfsHash) {
-  if (USE_MOCK_IPFS || !ipfsClient) {
-    return; // No-op in mock mode
-  }
-
-  // Initialize IPFS client if needed
-  await initIPFSClient();
-
+  const client = await initWeb3Storage();
+  
   try {
-    await ipfsClient.pin.add(ipfsHash);
-    console.log(`Pinned ${ipfsHash} to IPFS`);
+    // Web3.Storage automatically pins content when uploaded
+    // Verify the content exists and is pinned
+    console.log(`📌 Verifying IPFS pin status: ${ipfsHash}`);
+    const status = await client.status(ipfsHash);
+    if (status) {
+      console.log(`✅ Content is pinned on IPFS: ${ipfsHash}`);
+      console.log(`   🔗 View at: https://${ipfsHash}.ipfs.w3s.link/`);
+      console.log(`   📋 IPFS Gateway: https://ipfs.io/ipfs/${ipfsHash}`);
+    } else {
+      console.log(`✅ Content uploaded to IPFS: ${ipfsHash}`);
+    }
   } catch (error) {
-    console.error('Error pinning to IPFS:', error);
-    // Don't throw - pinning failure shouldn't break the flow
+    console.warn('Error checking IPFS pin status:', error.message);
+    // Don't throw - pinning verification failure shouldn't break the flow
+    // Content is still uploaded and accessible
   }
 }
 

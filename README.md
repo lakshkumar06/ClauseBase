@@ -87,13 +87,7 @@ Client locks payment in escrow for each milestone. Vendor completes work and mar
 
 Deal completion updates both parties' on-chain scores visible to future counterparties. Vendor scores reflect delivery timeliness and quality. Client scores reflect payment speed and responsiveness.
 
-## Screenshots
 
-(images/1.png)
-
-(images/2.png)
-
-(images/3.png)
 
 ## Technical Architecture
 

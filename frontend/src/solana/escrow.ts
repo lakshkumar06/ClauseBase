@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { ensureReputationExists } from "./reputation";
 import idl from "../../../agreed_contracts/target/idl/agreed_contracts.json";
 
 const PROGRAM_ID = new PublicKey(import.meta.env.VITE_SOLANA_PROGRAM_ID || "8sRBcQiawsPTmLAcoJPtGAf4gYEszqHLx31DZEtjcinb");
@@ -71,12 +72,14 @@ export function getContractPDA(contractId: string | number, creator: PublicKey):
   return [pda, bump];
 }
 
-// Derive reputation PDA
-export function getReputationPDA(wallet: PublicKey): [PublicKey, number] {
-  // Utility function - uses PROGRAM_ID which should match IDL's address
+// Derive reputation PDA - uses program ID from IDL to ensure consistency
+export function getReputationPDA(wallet: PublicKey, programId?: PublicKey): [PublicKey, number] {
+  // Use provided programId or fall back to PROGRAM_ID constant
+  // When called from within a program context, should use program.programId
+  const pid = programId || PROGRAM_ID;
   const [pda, bump] = PublicKey.findProgramAddressSync(
     [Buffer.from("reputation"), wallet.toBuffer()],
-    PROGRAM_ID
+    pid
   );
   return [pda, bump];
 }
@@ -102,7 +105,9 @@ export async function initializeEscrowMilestone(
   const contractPDA = contractPDAOverride
     ? new PublicKey(contractPDAOverride)
     : getContractPDA(contractId, contractCreator)[0];
-  const [creatorReputationPDA] = getReputationPDA(wallet.publicKey);
+  
+  // Use program ID from IDL to ensure consistency with reputation account creation
+  const [creatorReputationPDA] = getReputationPDA(wallet.publicKey, program.programId);
   const recipient = new PublicKey(recipientAddress);
   const amountInLamports = BigInt(Math.round(amountInSol * LAMPORTS_PER_SOL));
 
@@ -120,6 +125,11 @@ export async function initializeEscrowMilestone(
   const deadlineBN = new anchor.BN(deadlineBuf, 'le');
 
   try {
+    // Ensure creator's reputation account exists before initializing escrow
+    console.log("Ensuring creator reputation account exists...");
+    await ensureReputationExists(wallet);
+    console.log("Creator reputation account verified");
+
     const tx = await program.methods
       .initializeEscrowMilestone(
         milestoneIdBN,
@@ -165,6 +175,12 @@ export async function markMilestoneComplete(
     : getContractPDA(contractId, contractCreator)[0];
 
   try {
+    // Ensure vendor (marker) reputation account exists before marking complete
+    // The marker must be the recipient, so they should initialize their own reputation
+    console.log("Ensuring vendor reputation account exists...");
+    await ensureReputationExists(wallet);
+    console.log("Vendor reputation account verified");
+
     const tx = await program.methods
       .markMilestoneComplete()
       .accounts({
@@ -199,9 +215,16 @@ export async function approveMilestoneRelease(
   const contractPDA = contractPDAOverride
     ? new PublicKey(contractPDAOverride)
     : getContractPDA(contractId, contractCreator)[0];
-  const [approverReputationPDA] = getReputationPDA(wallet.publicKey);
+  
+  // Use program ID from IDL to ensure consistency
+  const [approverReputationPDA] = getReputationPDA(wallet.publicKey, program.programId);
 
   try {
+    // Ensure approver's reputation account exists
+    console.log("Ensuring approver reputation account exists...");
+    await ensureReputationExists(wallet);
+    console.log("Approver reputation account verified");
+
     const tx = await program.methods
       .approveMilestoneRelease()
       .accounts({
@@ -225,7 +248,8 @@ export async function releaseEscrowFunds(
   wallet: anchor.Wallet,
   contractId: string,
   milestoneId: number,
-  recipientAddress: string
+  recipientAddress: string,
+  creatorAddress?: string
 ): Promise<string> {
   const provider = new anchor.AnchorProvider(connection, wallet, {
     commitment: "confirmed",
@@ -236,6 +260,32 @@ export async function releaseEscrowFunds(
   const recipient = new PublicKey(recipientAddress);
 
   try {
+    // Fetch escrow milestone to get creator if not provided
+    let creator: PublicKey;
+    if (creatorAddress) {
+      creator = new PublicKey(creatorAddress);
+    } else {
+      const escrowData = await program.account.escrowMilestone.fetch(escrowPDA);
+      creator = escrowData.creator;
+    }
+
+    // Ensure creator's reputation account exists (if caller is creator)
+    // Note: We can only initialize our own reputation, but the accounts must exist
+    if (wallet.publicKey.equals(creator)) {
+      console.log("Ensuring creator reputation account exists...");
+      await ensureReputationExists(wallet);
+    }
+    
+    // For recipient, we can't initialize their account, but we can check if it exists
+    // If it doesn't exist, the transaction will fail with a clear error
+    const [vendorRepPDA] = getReputationPDA(recipient, program.programId);
+    try {
+      await program.account.userReputation.fetch(vendorRepPDA);
+    } catch (e) {
+      console.warn("Recipient reputation account doesn't exist. They need to initialize it first.");
+      throw new Error("Recipient reputation account doesn't exist. Please ask the recipient to initialize their reputation account first.");
+    }
+
     const tx = await program.methods
       .releaseEscrowFunds()
       .accounts({
