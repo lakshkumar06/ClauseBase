@@ -196,3 +196,4 @@ npm run dev
 Every contract is a promise. Right now, promises live in email threads, lawyers' desks, and people's memory. Pact puts them in version-controlled, cryptographically-verified, immutable shared truth.
 
 This isn't about replacing lawyers. It's about giving everyone the tools lawyers wish they had.
+# contracts
